@@ -3,29 +3,10 @@ import dbConnect from "@/lib/mongodb"
 import { PayrollRule } from "@/models/PayrollRule"
 import { getSession, isAllowed } from "@/lib/auth"
 import type { UserRole } from "@/types"
-import { z } from "zod"
-import { logAudit } from "@/lib/audit-log"
-import { verifyCsrfToken } from "@/lib/csrf.server"
 
-const ruleSchema = z.object({
-  ruleName: z.string().min(1),
-  isActive: z.boolean().optional(),
-  effectiveDate: z.string().datetime(),
-  riceAllowance: z.coerce.number().min(0).optional(),
-  transportAllowance: z.coerce.number().min(0).optional(),
-  medicalAllowance: z.coerce.number().min(0).optional(),
-  otherAllowance: z.coerce.number().min(0).optional(),
-  sssContribution: z.coerce.number().min(0).optional(),
-  philhealthContribution: z.coerce.number().min(0).optional(),
-  pagibigContribution: z.coerce.number().min(0).optional(),
-  taxWithholding: z.coerce.number().min(0).optional(),
-  otRegularDay: z.coerce.number().min(0).optional(),
-  otRestDay: z.coerce.number().min(0).optional(),
-  otSpecialHoliday: z.coerce.number().min(0).optional(),
-  otRegularHoliday: z.coerce.number().min(0).optional(),
-})
+export const dynamic = "force-dynamic"
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const session = getSession()
     if (!session || !isAllowed(session.role as UserRole, ["ADMIN", "HR_PAYROLL"])) {
@@ -43,11 +24,6 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const csrf = verifyCsrfToken(req)
-    if (!csrf.valid) {
-      return csrf.response!
-    }
-
     const session = getSession()
     if (!session || !isAllowed(session.role as UserRole, ["ADMIN", "HR_PAYROLL"])) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
@@ -55,31 +31,13 @@ export async function POST(req: Request) {
 
     await dbConnect()
     const body = await req.json()
-    const parsed = ruleSchema.safeParse(body)
+const { name, basicSalary, allowances, deductions, overtimeRate } = body as { name: string; basicSalary: number; allowances: number; deductions: number; overtimeRate: number }
 
-    if (!parsed.success) {
-      return NextResponse.json(
-        { error: "Validation failed", details: parsed.error.flatten().fieldErrors },
-        { status: 400 }
-      )
+    if (!name) {
+      return NextResponse.json({ error: "Rule name is required" }, { status: 400 })
     }
 
-    // Deactivate previous active rules when creating a new active one
-    if (parsed.data.isActive !== false) {
-      await PayrollRule.updateMany({ isActive: true }, { isActive: false })
-    }
-
-    const rule = await PayrollRule.create(parsed.data)
-
-    await logAudit({
-      action: "CREATE",
-      module: "PAYROLL",
-      recordId: rule._id.toString(),
-      details: { ruleName: rule.ruleName, isActive: rule.isActive },
-      ipAddress: req.headers.get("x-forwarded-for") || undefined,
-      userAgent: req.headers.get("user-agent") || undefined,
-    })
-
+    const rule = await PayrollRule.create({ name, basicSalary, allowances, deductions, overtimeRate })
     return NextResponse.json({ rule }, { status: 201 })
   } catch (err) {
     console.error(err)

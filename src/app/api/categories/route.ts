@@ -3,10 +3,10 @@ import dbConnect from "@/lib/mongodb"
 import { Category } from "@/models/Category"
 import { getSession, isAllowed } from "@/lib/auth"
 import type { UserRole } from "@/types"
-import { logAudit } from "@/lib/audit-log"
-import { verifyCsrfToken } from "@/lib/csrf.server"
 
-export async function GET() {
+export const dynamic = "force-dynamic"
+
+export async function GET(req: Request) {
   try {
     const session = getSession()
     if (!session || !isAllowed(session.role as UserRole, ["ADMIN", "INVENTORY"])) {
@@ -24,11 +24,6 @@ export async function GET() {
 
 export async function POST(req: Request) {
   try {
-    const csrf = verifyCsrfToken(req)
-    if (!csrf.valid) {
-      return csrf.response!
-    }
-
     const session = getSession()
     if (!session || !isAllowed(session.role as UserRole, ["ADMIN", "INVENTORY"])) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 403 })
@@ -38,20 +33,10 @@ export async function POST(req: Request) {
     const { name, description } = await req.json()
 
     if (!name) {
-      return NextResponse.json({ error: "Name is required" }, { status: 400 })
+      return NextResponse.json({ error: "Category name is required" }, { status: 400 })
     }
 
     const category = await Category.create({ name, description })
-
-    await logAudit({
-      action: "CREATE",
-      module: "INVENTORY",
-      recordId: category._id.toString(),
-      details: { name, description },
-      ipAddress: req.headers.get("x-forwarded-for") || undefined,
-      userAgent: req.headers.get("user-agent") || undefined,
-    })
-
     return NextResponse.json({ category }, { status: 201 })
   } catch (err) {
     console.error(err)
