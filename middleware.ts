@@ -2,13 +2,18 @@ import { NextResponse } from "next/server"
 import type { NextRequest } from "next/server"
 import jwt from "jsonwebtoken"
 
-const JWT_SECRET = process.env.JWT_SECRET
-
-if (!JWT_SECRET) {
-  throw new Error("Please define the JWT_SECRET environment variable inside .env.local")
+/**
+ * Resolved lazily so that loading this module during `next build`
+ * does not crash when JWT_SECRET is not configured in the environment.
+ * The error is only raised when a token is actually verified.
+ */
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error("Please define the JWT_SECRET environment variable inside .env.local")
+  }
+  return secret
 }
-
-const jwtSecret = JWT_SECRET as string
 
 // Public routes that do not require authentication
 const PUBLIC_ROUTES = ["/login", "/register", "/api/auth"]
@@ -27,7 +32,7 @@ const ROUTE_ROLES: Record<string, string[]> = {
 
 function getUserRoleFromToken(token: string): string | null {
   try {
-    const decoded = jwt.verify(token, jwtSecret) as { role?: string }
+    const decoded = jwt.verify(token, getJwtSecret()) as { role?: string }
     return decoded.role || null
   } catch {
     return null

@@ -3,30 +3,34 @@ import dbConnect from "@/lib/mongodb"
 import { User } from "@/models/User"
 import { signToken } from "@/lib/auth"
 import { logAudit } from "@/lib/audit-log"
-import { registerSchema, type RegisterInput } from "@/lib/validation"
+import { registerSchema } from "@/lib/validation"
 
 export const dynamic = "force-dynamic"
 
 export async function POST(req: Request) {
   try {
-    await dbConnect()
+    const parsed = registerSchema.safeParse(await req.json())
 
-    const { email, password, name, role } = await req.json()
-
-    if (!email || !password || !name) {
-      return NextResponse.json({ error: "Email, password, and name are required" }, { status: 400 })
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid registration data" }, { status: 400 })
     }
+
+    const { email, password, name } = parsed.data
+
+    await dbConnect()
 
     const existing = await User.findOne({ email })
     if (existing) {
       return NextResponse.json({ error: "Email already registered" }, { status: 400 })
     }
 
+    // Self-registration always creates an EMPLOYEE account.
+    // Elevated roles are only assigned through admin-managed employee records.
     const user = await User.create({
       email,
       password,
       name,
-      role,
+      role: "EMPLOYEE",
       isActive: true,
     })
 

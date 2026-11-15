@@ -9,7 +9,6 @@ export default function RegisterPage() {
     email: "",
     password: "",
     name: "",
-    role: "EMPLOYEE",
   })
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
@@ -28,7 +27,7 @@ export default function RegisterPage() {
           "Content-Type": "application/json",
           ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
         },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ email: form.email, password: form.password, name: form.name }),
       })
 
       const data = await res.json()
@@ -96,21 +95,6 @@ export default function RegisterPage() {
               onChange={(e) => setForm({ ...form, password: e.target.value })}
             />
           </div>
-          <div className="form-group">
-            <label className="form-label">Role</label>
-            <select
-              required
-              className="input"
-              value={form.role}
-              onChange={(e) => setForm({ ...form, role: e.target.value })}
-            >
-              <option value="EMPLOYEE">Employee</option>
-              <option value="ADMIN">Administrator</option>
-              <option value="HR_PAYROLL">HR / Payroll Officer</option>
-              <option value="INVENTORY">Inventory Officer</option>
-            </select>
-          </div>
-
           <button
             type="submit"
             disabled={loading}

@@ -1,14 +1,6 @@
 import jwt from "jsonwebtoken"
 import { cookies } from "next/headers"
 
-const JWT_SECRET = process.env.JWT_SECRET
-
-if (!JWT_SECRET) {
-  throw new Error("Please define the JWT_SECRET environment variable inside .env.local")
-}
-
-const secret = JWT_SECRET
-
 export type JWTPayload = {
   userId: string
   email: string
@@ -17,13 +9,26 @@ export type JWTPayload = {
 
 export type UserRole = "ADMIN" | "HR_PAYROLL" | "INVENTORY" | "EMPLOYEE"
 
+/**
+ * Resolved lazily so that importing this module during `next build`
+ * does not crash when JWT_SECRET is not configured in the environment.
+ * The error is only raised when a token is actually signed/verified.
+ */
+function getJwtSecret(): string {
+  const secret = process.env.JWT_SECRET
+  if (!secret) {
+    throw new Error("Please define the JWT_SECRET environment variable inside .env.local")
+  }
+  return secret
+}
+
 export function signToken(payload: JWTPayload): string {
-  return jwt.sign(payload, secret, { expiresIn: "7d" })
+  return jwt.sign(payload, getJwtSecret(), { expiresIn: "7d" })
 }
 
 export function verifyToken(token: string): JWTPayload | null {
   try {
-    return jwt.verify(token, secret) as JWTPayload
+    return jwt.verify(token, getJwtSecret()) as JWTPayload
   } catch {
     return null
   }

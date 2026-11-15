@@ -3,7 +3,7 @@ import dbConnect from "@/lib/mongodb"
 import { User } from "@/models/User"
 import { signToken } from "@/lib/auth"
 import { logAudit } from "@/lib/audit-log"
-import { loginSchema, type LoginInput } from "@/lib/validation"
+import { loginSchema } from "@/lib/validation"
 import { rateLimit, getClientIp } from "@/lib/rate-limit"
 import { setCsrfCookie } from "@/lib/csrf.server"
 
@@ -11,13 +11,15 @@ export const dynamic = "force-dynamic"
 
 export async function POST(req: Request) {
   try {
-    await dbConnect()
+    const parsed = loginSchema.safeParse(await req.json())
 
-    const { email, password } = await req.json()
-
-    if (!email || !password) {
-      return NextResponse.json({ error: "Email and password are required" }, { status: 400 })
+    if (!parsed.success) {
+      return NextResponse.json({ error: parsed.error.issues[0]?.message || "Invalid email or password" }, { status: 400 })
     }
+
+    const { email, password } = parsed.data
+
+    await dbConnect()
 
     const user = await User.findOne({ email }).select("+password")
     if (!user) {
