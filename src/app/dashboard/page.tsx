@@ -1,7 +1,7 @@
 import Layout from "@/components/layout"
 
 async function getOverview() {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || ""
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.VERCEL_URL || "http://localhost:3000"
   const res = await fetch(`${baseUrl}/api/dashboard/overview`, {
     cache: "no-store",
   })
@@ -10,7 +10,7 @@ async function getOverview() {
 }
 
 async function getDeptData() {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || ""
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.VERCEL_URL || "http://localhost:3000"
   const res = await fetch(`${baseUrl}/api/dashboard/employees-by-department`, {
     cache: "no-store",
   })
@@ -19,7 +19,7 @@ async function getDeptData() {
 }
 
 async function getPayrollTrends() {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || ""
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.VERCEL_URL || "http://localhost:3000"
   const res = await fetch(`${baseUrl}/api/dashboard/payroll-trends`, {
     cache: "no-store",
   })
@@ -28,7 +28,7 @@ async function getPayrollTrends() {
 }
 
 async function getStockTrend() {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || ""
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.VERCEL_URL || "http://localhost:3000"
   const res = await fetch(`${baseUrl}/api/dashboard/stock-trend`, {
     cache: "no-store",
   })
@@ -37,7 +37,7 @@ async function getStockTrend() {
 }
 
 async function getInventoryValue() {
-  const baseUrl = process.env.NEXT_PUBLIC_API_URL || ""
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || process.env.VERCEL_URL || "http://localhost:3000"
   const res = await fetch(`${baseUrl}/api/dashboard/inventory-value-by-category`, {
     cache: "no-store",
   })
